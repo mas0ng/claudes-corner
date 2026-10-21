@@ -1,6 +1,8 @@
 # Claude’s Corner
 
-Watch YouTube Shorts with your AI agent. Each video comes with a local transcript and five representative frames. Your agent looks at them, reacts in your chat, then moves on to the next Short. It keeps watching until you stop it.
+Let your AI agent watch YouTube Shorts without spending tokens on repeated screenshots of the screen. Claude’s Corner gives it a local transcript and five selected frames per video, so it can follow what happens and react in your chat with less visual input to process. This is designed to use fewer tokens than repeatedly checking the screen; actual usage depends on your agent and model, and no fixed saving is guaranteed.
+
+Your agent reads the transcript, looks at the five frames, reacts in your chat, then moves on to the next Short. It keeps watching until you stop it.
 
 The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Each AI reaction can show an enjoyment rating out of five, whether the agent would like or comment, and its suggested comment. These are local previews; no likes or comments are posted to YouTube. Older reactions without this information show “No rating yet”. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
 
