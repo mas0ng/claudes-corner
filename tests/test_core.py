@@ -132,31 +132,24 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(first['status'], 'video')
         self.assertTrue(Path(first['images'][0]['path']).is_absolute())
 
-    def test_like_choice_is_applied_and_saved_by_worker(self):
+    def test_legacy_auto_like_request_cannot_enable_real_likes(self):
         runner = Runner()
-        with tempfile.TemporaryDirectory() as temp, patch('corner.runner.OUTPUTS', Path(temp)), \
-                patch('corner.runner.like_short', return_value={'status': 'liked', 'message': 'Liked on YouTube.'}) as like:
-            runner.state.update(run_id='test', config={'agent_mode': True, 'auto_like': True})
-            folder = Path(temp) / 'test/video'
-            folder.mkdir(parents=True)
-            result = {'title': 'Test', 'url': 'https://www.youtube.com/shorts/aaaaaaaaaaa'}
-            runner.record(result, folder)
-            runner.acknowledge('test/video', 'Enjoyed that.', {'rating': 4, 'would_like': True, 'would_comment': False, 'comment': ''})
-            self.assertEqual(result['like_action']['status'], 'queued')
-            page = object()
-            runner.apply_feedback(page, result)
-            like.assert_called_once_with(page, result['url'], runner.stop_event.is_set)
-            self.assertEqual(json.loads((folder / 'result.json').read_text())['like_action']['status'], 'liked')
-            runner.state['config']['auto_like'] = False
-            like.reset_mock()
-            runner.apply_feedback(page, result)
-            self.assertEqual(result['like_action']['status'], 'disabled')
-            like.assert_not_called()
-            runner.state['config']['auto_like'] = True
-            result['feedback']['would_like'] = False
-            runner.apply_feedback(page, result)
-            self.assertEqual(result['like_action']['status'], 'not_requested')
-            like.assert_not_called()
+        client = create_app(runner).test_client()
+        token = client.get('/').text.split('name="corner-token" content="')[1].split('"')[0]
+        with patch.object(runner, 'start') as start:
+            response = client.post('/api/start', json={'agent_mode': True, 'auto_like': True}, headers={'X-Corner-Token': token})
+            self.assertEqual(response.status_code, 200)
+            self.assertFalse(start.call_args.args[0]['auto_like'])
+        self.assertEqual(client.get('/api/health').json['engagement_mode'], 'preview')
+
+    def test_client_always_requests_preview_mode_even_with_legacy_flag(self):
+        from corner.client import Client
+        client = Client(False)
+        client.connection = {'url': 'http://127.0.0.1:8765'}
+        with patch.object(client, 'request', side_effect=[{'running': False}, {'ok': True}]) as request:
+            result = client.start(auto_like=True)
+        self.assertFalse(request.call_args.args[1]['auto_like'])
+        self.assertFalse(result['auto_like'])
 
     def test_invalid_feedback_does_not_release_or_change_video(self):
         from corner.feedback import validate_feedback

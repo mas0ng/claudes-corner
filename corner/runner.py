@@ -13,7 +13,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 from .media import short_id
 from .feedback import validate_feedback
-from .youtube import like_short
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS = ROOT / 'outputs'
@@ -169,26 +168,10 @@ class Runner:
             result['reaction'] = reaction.strip()
             if feedback is not None:
                 result['feedback'] = feedback
-                result['like_action'] = {'status': 'queued', 'message': 'Waiting to apply the AI’s like choice.'}
             (OUTPUTS / key / 'result.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
             self.state['pending_reaction'] = None
             self.persist()
             self.reaction_event.set()
-
-    def apply_feedback(self, page, result):
-        feedback = result.get('feedback')
-        if feedback is None:
-            return
-        if not feedback['would_like']:
-            action = {'status': 'not_requested', 'message': 'The AI chose not to like this video. Existing likes are kept.'}
-        elif not self.state['config'].get('auto_like', True):
-            action = {'status': 'disabled', 'message': 'Automatic likes are turned off.'}
-        else:
-            action = like_short(page, result['url'], self.stop_event.is_set)
-        with self.lock:
-            result['like_action'] = action
-            (OUTPUTS / result['folder'] / 'result.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
-            self.persist()
 
     def run(self, config):
         session = OUTPUTS / self.state['run_id']
@@ -236,7 +219,6 @@ class Runner:
                                 self.update('Waiting for your agent’s reaction…')
                                 while not self.reaction_event.wait(.25):
                                     self.check()
-                                self.apply_feedback(page, result)
                         except Cancelled:
                             raise
                         except Exception as exc:
@@ -257,10 +239,6 @@ class Runner:
         finally:
             cookies.unlink(missing_ok=True)
             with self.lock:
-                for result in self.state['results']:
-                    if result.get('like_action', {}).get('status') == 'queued':
-                        result['like_action'] = {'status': 'cancelled', 'message': 'Watching ended before the like was applied.'}
-                        (OUTPUTS / result['folder'] / 'result.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
                 self.state['running'] = False
                 self.state['blocker'] = None
             self.persist()

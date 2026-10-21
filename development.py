@@ -55,7 +55,7 @@ def create_app(runner=None):
 
     @app.get('/api/health')
     def health():
-        return jsonify(service='claudes-corner', version=installed_version(), instance=app.config['INSTANCE'])
+        return jsonify(service='claudes-corner', version=installed_version(), instance=app.config['INSTANCE'], engagement_mode='preview')
 
     @app.get('/api/library')
     def videos():
@@ -70,9 +70,7 @@ def create_app(runner=None):
                 raise ValueError('Invalid browser or model.')
             if not isinstance(data.get('agent_mode', False), bool):
                 raise ValueError('Invalid agent mode.')
-            if not isinstance(data.get('auto_like', True), bool):
-                raise ValueError('Invalid automatic likes setting.')
-            runner.start({'browser': browser, 'model': model, 'agent_mode': data.get('agent_mode', False), 'auto_like': data.get('auto_like', True)})
+            runner.start({'browser': browser, 'model': model, 'agent_mode': data.get('agent_mode', False), 'auto_like': False})
         except (ValueError, TypeError, OverflowError) as exc:
             return jsonify(error=str(exc)), 400
         return jsonify(ok=True)

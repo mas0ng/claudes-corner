@@ -32,7 +32,9 @@ if __name__ == '__main__':
             like_action={'status':'liked','message':'Liked on YouTube.'})
         page.route('**/api/library',lambda route:route.fulfill(json=[fixture]))
         page.get_by_text('5/5 · Loved it',exact=True).wait_for()
-        assert page.get_by_text('♥ Liked on YouTube',exact=True).is_visible()
+        assert page.get_by_text('♥ Would like',exact=True).is_visible()
+        assert page.get_by_text('♥ Liked on YouTube',exact=True).count()==0
+        assert page.locator('#auto-like').count()==0
         assert page.get_by_text('Comment draft',exact=True).is_visible()
         assert page.get_by_text('Not posted',exact=True).is_visible()
         assert page.locator('.star.filled').count()==5
@@ -48,8 +50,9 @@ if __name__ == '__main__':
         assert page.locator('.suggested-comment blockquote').count()==0
         fixture['feedback']={'rating':4,'would_like':True,'would_comment':True,'comment':'A clear draft.'}
         fixture['like_action']={'status':'needs_sign_in','message':'Sign in to YouTube to enable likes.'}
-        page.get_by_text('♡ Sign in to like',exact=True).wait_for()
-        assert page.get_by_text('Sign in to YouTube to enable likes.',exact=True).is_visible()
+        page.get_by_text('4/5 · Liked it',exact=True).wait_for()
+        assert page.get_by_text('♡ Sign in to like',exact=True).count()==0
+        assert page.get_by_text('Sign in to YouTube to enable likes.',exact=True).count()==0
         page.set_viewport_size({'width':390,'height':844})
         page.screenshot(path=str(output/'feedback-mobile.png'),full_page=True)
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
