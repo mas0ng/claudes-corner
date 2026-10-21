@@ -2,18 +2,23 @@
 
 Watch YouTube Shorts with your AI agent. Each video comes with a local transcript and five representative frames. Your agent looks at them, reacts in your chat, then moves on to the next Short. It keeps watching until you stop it.
 
-The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Agent reactions are saved there too. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
+The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Each AI reaction can show an enjoyment rating out of five, whether the agent would like or comment, and its suggested comment. These are local previews; no likes or comments are posted to YouTube. Older reactions without this information show “No rating yet”. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
 
 ## Give this prompt to your agent
 
 Copy the entire block into a new Claude, Codex or other tool-capable agent chat:
 
 ```text
-Install and run Claude’s Corner from https://github.com/mas0ng/claudes-corner.
+Install or update and run Claude’s Corner from https://github.com/mas0ng/claudes-corner.
 Use an existing checkout of that repository if one is already available in this
-workspace; otherwise clone it into a suitable local folder. Read README.md and
+workspace; otherwise clone it into a suitable local folder. For an existing clean
+Git checkout, first run git pull --ff-only to get the latest installer. Preserve
+local source changes instead of overwriting them. Read README.md and
 skills/claudes-corner/SKILL.md. Run python install.py with Python 3.12 or newer
-to install the environment, dependencies and Chromium. Use the created virtual
+to check the version on GitHub, update when newer, and install any missing
+dependencies and Chromium. Reuse the checkout, .venv, .runtime, outputs and cached
+models; do not download a fresh copy or force reinstall everything on repeat runs.
+Restart an already-open app after updating so it loads the new code. Use the created virtual
 environment for commands if needed. Do not require MCP registration: the CLI
 works immediately in this chat.
 
@@ -25,7 +30,12 @@ Repeatedly call python corner_cli.py next --wait 25. On a video result, read its
 transcript and inspect ALL FIVE returned absolute image paths with your image
 tool. Give me a natural, specific reaction in THIS CHAT using an intermediate
 message, then save exactly that reaction to a temporary UTF-8 file and run
-python corner_cli.py react --key <returned-key> --text-file <reaction-file>.
+python corner_cli.py react --key <returned-key> --text-file <reaction-file>
+  --feedback-file <feedback-json-file>.
+Write that feedback file as JSON with rating (integer 1–5), would_like (boolean),
+would_comment (boolean), and comment (your proposed comment, or an empty string
+if you would not comment). Choose honestly; these are previews, not real YouTube
+actions. Include your opinion in chat as well as saving it to the dashboard.
 Then request the next video. Do not merely save reactions to the dashboard:
 I want to see you reacting in the conversation as we watch.
 
@@ -59,16 +69,32 @@ Press **Watch Shorts** to capture continuously yourself, or use the agent prompt
 
 ## Agent commands
 
+### Running it again and getting updates
+
+Run `python install.py` again in the same checkout. It shows the installed version, checks GitHub's `main` branch, and automatically fast-forwards to a newer `VERSION` when available. It then runs the updated installer for changed dependencies. If already current, it says so and reuses installed packages and the matching browser. Whisper models stay cached, captured Shorts are skipped, and saved videos/reactions stay in `outputs/`. A new browser build, a different model or a new dependency may need its own download.
+
+Stop and close the app before updating, then reopen `python watch.py` (or let your agent start it). Local source edits or divergent Git history block automatic replacement, with a message explaining how to proceed. A failed update check keeps the installed version available. Source ZIP installs remain usable but need a Git clone for automatic updates. `python install.py --no-update` skips the update check. The installed version appears at the bottom of the dashboard.
+
+### Commands
+
 Run from the repository directory:
 
 ```sh
 python corner_cli.py start
 python corner_cli.py next --wait 25
-python corner_cli.py react --key "<returned-key>" --text-file reaction.txt
+python corner_cli.py react --key "<returned-key>" --text-file reaction.txt --feedback-file feedback.json
 python corner_cli.py stop
 ```
 
 `start` reuses an active agent session or starts the shared local service, opens the YouTube browser, and returns the dashboard URL. `next` returns JSON with `video`, `waiting`, `needs_attention` or `stopped`. A video includes its transcript, timestamped segments, source URL, frame timestamps and absolute paths for all five images. Until acknowledged, the same video is returned so an interrupted reader does not lose it. `react` validates the current key, saves the reaction and permits the next capture. `status` and `library` are available too.
+
+`feedback.json` contains the agent's assessment, for example:
+
+```json
+{"rating": 4, "would_like": true, "would_comment": true, "comment": "That last-second reveal got me."}
+```
+
+Ratings run from 1 (disliked) to 5 (loved). Like and comment choices are independent. If `would_comment` is false, `comment` must be empty. Invalid feedback leaves the current video waiting so the agent can correct it. `--feedback-file` is optional for compatibility with older agents; missing ratings are never guessed from reaction text. These labels express the agent's assessment of the video, not a measurement of emotions.
 
 If a manual session is already running, stop it before using agent mode. The CLI and optional MCP bridge share the same server and browser, instead of starting competing capture loops.
 
@@ -80,7 +106,7 @@ The CLI needs no agent configuration. For MCP-capable clients, installation also
 | --- | --- |
 | `start_watching` | Start/reuse an agent session; return dashboard URL |
 | `next_video` | Next transcript and five images inline |
-| `acknowledge_reaction` | Save the reaction already posted in chat, then continue |
+| `acknowledge_reaction` | Save chat reaction plus `rating`, `would_like`, `would_comment`, `comment`, then continue |
 | `watching_status` | Current status and consent notice |
 | `stop_watching` | Stop capture |
 

@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from .media import short_id
+from .feedback import validate_feedback
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS = ROOT / 'outputs'
@@ -156,14 +157,17 @@ class Runner:
                 self.state['pending_reaction'] = result['folder']
         self.update('Ready: ' + result['title'])
 
-    def acknowledge(self, key, reaction):
+    def acknowledge(self, key, reaction, feedback=None):
         with self.lock:
             if not key or key != self.state['pending_reaction']:
                 raise ValueError('This video is not waiting for a reaction.')
             if not isinstance(reaction, str) or not reaction.strip():
                 raise ValueError('Write a reaction in chat, then provide the same text here.')
+            feedback = validate_feedback(feedback)
             result = next(r for r in self.state['results'] if r['folder'] == key)
             result['reaction'] = reaction.strip()
+            if feedback is not None:
+                result['feedback'] = feedback
             (OUTPUTS / key / 'result.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
             self.state['pending_reaction'] = None
             self.persist()

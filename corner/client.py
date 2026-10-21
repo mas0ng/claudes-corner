@@ -75,7 +75,7 @@ class Client:
         else:
             self.request('/api/start', {'browser': browser, 'model': model, 'agent_mode': True})
         return {'status': 'watching', 'dashboard': self.connection['url'],
-                'instruction': 'Call next, inspect all five images and transcript, react in chat, then acknowledge with that reaction. Repeat until stopped.'}
+                'instruction': 'Call next, inspect all five images and transcript, react in chat, then acknowledge with that reaction and feedback: rating 1–5, would_like, would_comment, and suggested comment. Repeat until stopped.'}
 
     def next(self, wait=25):
         until = time.monotonic() + max(0, min(float(wait), 50))
@@ -98,10 +98,10 @@ class Client:
                         raise RuntimeError('Invalid frame path.')
                     images.append({'path': str(path), 'time': frame['time']})
                 return {'status': 'video', 'key': key, 'video': result, 'images': images,
-                        'instruction': 'Read the transcript and inspect all five images. Give a natural reaction in this chat, then acknowledge with the same reaction text.'}
+                        'instruction': 'Read the transcript and inspect all five images. React in chat, then acknowledge with the same text and feedback: {rating: integer 1–5, would_like: boolean, would_comment: boolean, comment: string}. Comment must be nonempty only when would_comment is true. These are hypothetical preferences; never like or post on YouTube.'}
             if time.monotonic() >= until:
                 return {'status': 'waiting', 'message': state['status'], 'instruction': 'Call next again. Keep the watching turn active until the user stops.'}
             time.sleep(.5)
 
-    def react(self, key, reaction):
-        return self.request('/api/react', {'key': key, 'reaction': reaction})
+    def react(self, key, reaction, feedback=None):
+        return self.request('/api/react', {'key': key, 'reaction': reaction, 'feedback': feedback})

@@ -18,6 +18,7 @@ if __name__ == '__main__':
 
 from flask import Flask, abort, jsonify, render_template, request, send_from_directory
 from corner.runner import OUTPUTS, RUNTIME, Runner, library
+from corner.updater import installed_version
 
 ROOT = Path(__file__).resolve().parent
 
@@ -46,7 +47,7 @@ def create_app(runner=None):
 
     @app.get('/')
     def index():
-        return render_template('index.html', token=token)
+        return render_template('index.html', token=token, version=installed_version())
 
     @app.get('/api/state')
     def state():
@@ -54,7 +55,7 @@ def create_app(runner=None):
 
     @app.get('/api/health')
     def health():
-        return jsonify(service='claudes-corner', version='1.0.0', instance=app.config['INSTANCE'])
+        return jsonify(service='claudes-corner', version=installed_version(), instance=app.config['INSTANCE'])
 
     @app.get('/api/library')
     def videos():
@@ -88,7 +89,7 @@ def create_app(runner=None):
     def react():
         data = request.get_json(silent=True) or {}
         try:
-            runner.acknowledge(data.get('key'), data.get('reaction', ''))
+            runner.acknowledge(data.get('key'), data.get('reaction', ''), data.get('feedback'))
         except ValueError as exc:
             return jsonify(error=str(exc)), 400
         return jsonify(ok=True)

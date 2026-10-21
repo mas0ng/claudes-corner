@@ -26,9 +26,16 @@ def next_video(wait_seconds: float = 25):
     return content
 
 @mcp.tool()
-def acknowledge_reaction(key: str, reaction: str) -> dict:
-    """Save the reaction you already wrote in chat and allow the next capture."""
-    return Client(autostart=False).react(key, reaction)
+def acknowledge_reaction(key: str, reaction: str, rating: int | None = None,
+                         would_like: bool | None = None, would_comment: bool | None = None,
+                         comment: str = '') -> dict:
+    """Save your chat reaction and hypothetical rating (1–5), like and suggested comment. Never posts to YouTube."""
+    feedback = None
+    if any(value is not None for value in (rating, would_like, would_comment)) or comment:
+        from corner.feedback import validate_feedback
+        feedback = validate_feedback({'rating': rating, 'would_like': would_like,
+                                      'would_comment': would_comment, 'comment': comment})
+    return Client(autostart=False).react(key, reaction, feedback)
 
 @mcp.tool()
 def stop_watching() -> dict:

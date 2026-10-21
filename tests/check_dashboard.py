@@ -26,6 +26,20 @@ if __name__ == '__main__':
         page.wait_for_timeout(1500)
         assert page.locator('.transcript').first.evaluate('(d)=>d.open')
         page.screenshot(path=str(output/'simple-desktop.png'),full_page=True)
+        videos=page.request.get(connection['url']+'/api/library').json()
+        fixture=dict(videos[0], reaction='Dashboard feedback test.', feedback={
+            'rating':5,'would_like':True,'would_comment':True,'comment':'What a reveal! (UI test fixture)'})
+        page.route('**/api/library',lambda route:route.fulfill(json=[fixture]))
+        page.get_by_text('5/5 · Loved it',exact=True).wait_for()
+        assert page.get_by_text('♥ Would like',exact=True).is_visible()
+        assert page.get_by_text('Would comment',exact=True).is_visible()
+        assert page.get_by_text('What a reveal! (UI test fixture)',exact=True).is_visible()
+        page.screenshot(path=str(output/'feedback-preview.png'))
+        fixture['feedback']={'rating':2,'would_like':False,'would_comment':False,'comment':''}
+        page.get_by_text('2/5 · Not keen',exact=True).wait_for()
+        assert page.get_by_text('♡ Would not like',exact=True).is_visible()
+        assert page.locator('.suggested-comment').count()==0
+        page.unroute('**/api/library')
         blocker={'running':True,'status':'YouTube needs your consent','blocker':{'title':'YouTube needs your consent','message':'Review YouTube policies in the browser window.'}}
         page.route('**/api/state',lambda route:route.fulfill(json=blocker))
         page.locator('#consent').wait_for(state='visible')
@@ -37,5 +51,5 @@ if __name__ == '__main__':
         page.screenshot(path=str(output/'simple-mobile.png'),full_page=True)
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors
-        print('Dashboard passed: simple list, frames, transcript state, fullscreen consent, resume, mobile; no JS errors.')
+        print('Dashboard passed: frames, transcript, ratings, like/comment previews, consent, mobile; no JS errors.')
         browser.close()

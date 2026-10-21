@@ -16,6 +16,7 @@ def main():
     reaction.add_argument('--key', required=True)
     reaction.add_argument('--text')
     reaction.add_argument('--text-file')
+    reaction.add_argument('--feedback-file', help='UTF-8 JSON: rating (1–5), would_like, would_comment, comment.')
     commands.add_parser('stop')
     commands.add_parser('status')
     commands.add_parser('library')
@@ -31,7 +32,9 @@ def main():
             text = Path(args.text_file).read_text(encoding='utf-8') if args.text_file else args.text
             if not text:
                 raise ValueError('Provide --text or --text-file with the reaction already posted in chat.')
-            result = client.react(args.key, text)
+            feedback = json.loads(Path(args.feedback_file).read_text(encoding='utf-8-sig')) if args.feedback_file else None
+            from .feedback import validate_feedback
+            result = client.react(args.key, text, validate_feedback(feedback))
         else:
             result = client.request({'stop': '/api/stop', 'status': '/api/state', 'library': '/api/library'}[args.command], {} if args.command == 'stop' else None)
         print(json.dumps(result, ensure_ascii=True))

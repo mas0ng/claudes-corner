@@ -132,6 +132,50 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(first['status'], 'video')
         self.assertTrue(Path(first['images'][0]['path']).is_absolute())
 
+    def test_invalid_feedback_does_not_release_or_change_video(self):
+        from corner.feedback import validate_feedback
+        for value in ({}, {'rating': True, 'would_like': True, 'would_comment': False, 'comment': ''},
+                      {'rating': 6, 'would_like': True, 'would_comment': False, 'comment': ''},
+                      {'rating': 4, 'would_like': 'yes', 'would_comment': False, 'comment': ''},
+                      {'rating': 4, 'would_like': True, 'would_comment': True, 'comment': ''},
+                      {'rating': 4, 'would_like': True, 'would_comment': False, 'comment': 'contradictory'}):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_feedback(value)
+        runner = Runner()
+        runner.state.update(pending_reaction='test', results=[{'folder': 'test'}])
+        with self.assertRaises(ValueError):
+            runner.acknowledge('test', 'A reaction', {})
+        self.assertEqual(runner.state['pending_reaction'], 'test')
+        self.assertNotIn('reaction', runner.state['results'][0])
+        self.assertFalse(runner.reaction_event.is_set())
+
+    def test_api_saves_feedback_with_reaction_and_library(self):
+        runner = Runner()
+        with tempfile.TemporaryDirectory() as temp, patch('corner.runner.OUTPUTS', Path(temp)):
+            runner.state.update(run_id='test', config={'agent_mode': True})
+            folder = Path(temp) / 'test/video'
+            folder.mkdir(parents=True)
+            runner.record({'id': 'test', 'title': 'Test video'}, folder)
+            client = create_app(runner).test_client()
+            token = client.get('/').text.split('name="corner-token" content="')[1].split('"')[0]
+            feedback = {'rating': 5, 'would_like': True, 'would_comment': True, 'comment': '  What a reveal!  '}
+            response = client.post('/api/react', json={'key': 'test/video', 'reaction': 'Loved the reveal.', 'feedback': feedback}, headers={'X-Corner-Token': token})
+            self.assertEqual(response.status_code, 200)
+            saved = json.loads((folder / 'result.json').read_text(encoding='utf-8'))
+            self.assertEqual(saved['feedback']['comment'], 'What a reveal!')
+            self.assertEqual(saved['feedback']['rating'], 5)
+            self.assertEqual(client.get('/api/library').json[0]['feedback'], saved['feedback'])
+            self.assertTrue(runner.reaction_event.is_set())
+
+    def test_mcp_passes_feedback_to_shared_api(self):
+        import asyncio
+        import mcp_server
+        with patch.object(mcp_server.Client, 'react', return_value={'ok': True}) as react:
+            asyncio.run(mcp_server.mcp.call_tool('acknowledge_reaction', {
+                'key': 'test', 'reaction': 'Not my thing.', 'rating': 2,
+                'would_like': False, 'would_comment': False, 'comment': ''}))
+            react.assert_called_once_with('test', 'Not my thing.', {'rating': 2, 'would_like': False, 'would_comment': False, 'comment': ''})
+
     def test_mcp_returns_real_inline_image_blocks(self):
         import asyncio
         import mcp_server
