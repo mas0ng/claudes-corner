@@ -4,6 +4,8 @@ Let your AI agent watch YouTube Shorts without spending tokens on repeated scree
 
 Your agent reads the transcript, looks at the five frames, reacts in your chat, then moves on to the next Short. It keeps watching until you stop it.
 
+For each video, the dashboard shows the agent’s reaction, its rating out of 5, whether it would like the video, and whether it would comment—including what that comment would say. These are previews of its choices; nothing is liked or posted on YouTube.
+
 The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Each AI reaction can show an enjoyment rating out of five, whether the agent would like or comment, and its suggested comment. These are local previews; no likes or comments are posted to YouTube. Older reactions without this information show “No rating yet”. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
 
 ## Give this prompt to your agent
