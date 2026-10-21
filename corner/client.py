@@ -67,14 +67,15 @@ class Client:
                 message = str(exc)
             raise RuntimeError(message) from None
 
-    def start(self, browser='chromium', model='base'):
+    def start(self, browser='chromium', model='base', auto_like=True):
         state = self.request('/api/state')
         if state['running']:
             if not state.get('config', {}).get('agent_mode'):
                 raise RuntimeError('A manual session is running. Stop it before starting agent watching.')
         else:
-            self.request('/api/start', {'browser': browser, 'model': model, 'agent_mode': True})
+            self.request('/api/start', {'browser': browser, 'model': model, 'agent_mode': True, 'auto_like': auto_like})
         return {'status': 'watching', 'dashboard': self.connection['url'],
+                'auto_like': state.get('config', {}).get('auto_like', True) if state['running'] else auto_like,
                 'instruction': 'Call next, inspect all five images and transcript, react in chat, then acknowledge with that reaction and feedback: rating 1–5, would_like, would_comment, and suggested comment. Repeat until stopped.'}
 
     def next(self, wait=25):
@@ -98,7 +99,7 @@ class Client:
                         raise RuntimeError('Invalid frame path.')
                     images.append({'path': str(path), 'time': frame['time']})
                 return {'status': 'video', 'key': key, 'video': result, 'images': images,
-                        'instruction': 'Read the transcript and inspect all five images. React in chat, then acknowledge with the same text and feedback: {rating: integer 1–5, would_like: boolean, would_comment: boolean, comment: string}. Comment must be nonempty only when would_comment is true. These are hypothetical preferences; never like or post on YouTube.'}
+                        'instruction': 'Read the transcript and inspect all five images. React in chat, then acknowledge with the same text and feedback: {rating: integer 1–5, would_like: boolean, would_comment: boolean, comment: string}. Comment must be nonempty only when would_comment is true. When automatic likes are enabled, would_like=true triggers a real YouTube like in the watching browser. Comments stay drafts and are never posted.'}
             if time.monotonic() >= until:
                 return {'status': 'waiting', 'message': state['status'], 'instruction': 'Call next again. Keep the watching turn active until the user stops.'}
             time.sleep(.5)

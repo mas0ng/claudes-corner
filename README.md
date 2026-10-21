@@ -4,9 +4,9 @@ Let your AI agent watch YouTube Shorts without spending tokens on repeated scree
 
 Your agent reads the transcript, looks at the five frames, reacts in your chat, then moves on to the next Short. It keeps watching until you stop it.
 
-For each video, the dashboard shows the agent’s reaction, its rating out of 5, whether it would like the video, and whether it would comment—including what that comment would say. These are previews of its choices; nothing is liked or posted on YouTube.
+For each video, the dashboard shows the agent’s reaction, five stars with its rating highlighted in yellow, and its like decision. When automatic likes are enabled, videos the agent likes are **actually liked on YouTube** using your signed-in watching browser. The dashboard confirms the outcome. Comments appear in a separate **Comment draft** box marked **Not posted**; comments are never posted automatically.
 
-The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Each AI reaction can show an enjoyment rating out of five, whether the agent would like or comment, and its suggested comment. These are local previews; no likes or comments are posted to YouTube. Older reactions without this information show “No rating yet”. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
+The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Settings includes **Like videos the AI likes**, enabled by default for new sessions; turn it off for previews only. Older reactions without ratings show “No rating yet”. If YouTube redirects to consent, sign-in or verification, a full-screen notice tells you to complete that in the separate YouTube window.
 
 ## Give this prompt to your agent
 
@@ -38,8 +38,10 @@ python corner_cli.py react --key <returned-key> --text-file <reaction-file>
   --feedback-file <feedback-json-file>.
 Write that feedback file as JSON with rating (integer 1–5), would_like (boolean),
 would_comment (boolean), and comment (your proposed comment, or an empty string
-if you would not comment). Choose honestly; these are previews, not real YouTube
-actions. Include your opinion in chat as well as saving it to the dashboard.
+if you would not comment). Choose honestly: would_like=true makes the app click
+the real like button when automatic likes are enabled. Sign-in is required in
+the watching browser. Comments stay drafts and must not be posted. Include your
+opinion in chat as well as saving it to the dashboard.
 Then request the next video. Do not merely save reactions to the dashboard:
 I want to see you reacting in the conversation as we watch.
 
@@ -99,6 +101,14 @@ python corner_cli.py stop
 ```
 
 Ratings run from 1 (disliked) to 5 (loved). Like and comment choices are independent. If `would_comment` is false, `comment` must be empty. Invalid feedback leaves the current video waiting so the agent can correct it. `--feedback-file` is optional for compatibility with older agents; missing ratings are never guessed from reaction text. These labels express the agent's assessment of the video, not a measurement of emotions.
+
+### Real likes, draft comments
+
+Agent sessions enable automatic likes by default. Use `python corner_cli.py start --no-likes` or MCP `start_watching(auto_like=false)` for previews only; the dashboard setting applies to sessions started there. Settings apply when a session starts. Reusing an existing session keeps its existing setting, reported by `start`.
+
+After the agent acknowledges a video with `would_like=true`, the browser worker checks that the exact same Short is open, finds a unique on-screen button by accessible name (such as “like this video along with 1.5 thousand other people”), and checks `aria-pressed`. It clicks once only when the state is false, then waits for true. Already-liked videos are left alone, and a false like decision never removes an existing like. This uses [Playwright role locators](https://playwright.dev/python/docs/locators#locate-by-role) rather than YouTube’s generated CSS classes. English button labels are currently supported. Layout or label changes can still prevent a match; ambiguous controls are skipped rather than guessed.
+
+The dashboard distinguishes **Liked on YouTube**, **Already liked**, **Sign in to like**, **Like queued**, and unconfirmed/skipped actions. Sign in yourself in the separate watching browser; being signed into your everyday Chrome profile is not sufficient. No account credentials are collected. A click without a confirmed pressed state is never retried blindly. Ratings and comments remain local; **Comment draft / Not posted** is a suggestion for you to read, not a published comment.
 
 If a manual session is already running, stop it before using agent mode. The CLI and optional MCP bridge share the same server and browser, instead of starting competing capture loops.
 

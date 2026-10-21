@@ -1,4 +1,4 @@
-"""Validate the agent's hypothetical engagement, never real YouTube actions."""
+"""Validate agent ratings, like choices and draft comments."""
 
 
 def validate_feedback(value):

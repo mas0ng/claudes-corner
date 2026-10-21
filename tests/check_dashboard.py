@@ -28,17 +28,32 @@ if __name__ == '__main__':
         page.screenshot(path=str(output/'simple-desktop.png'),full_page=True)
         videos=page.request.get(connection['url']+'/api/library').json()
         fixture=dict(videos[0], reaction='Dashboard feedback test.', feedback={
-            'rating':5,'would_like':True,'would_comment':True,'comment':'What a reveal! (UI test fixture)'})
+            'rating':5,'would_like':True,'would_comment':True,'comment':'What a reveal! (UI test fixture)'},
+            like_action={'status':'liked','message':'Liked on YouTube.'})
         page.route('**/api/library',lambda route:route.fulfill(json=[fixture]))
         page.get_by_text('5/5 · Loved it',exact=True).wait_for()
-        assert page.get_by_text('♥ Would like',exact=True).is_visible()
-        assert page.get_by_text('Would comment',exact=True).is_visible()
+        assert page.get_by_text('♥ Liked on YouTube',exact=True).is_visible()
+        assert page.get_by_text('Comment draft',exact=True).is_visible()
+        assert page.get_by_text('Not posted',exact=True).is_visible()
+        assert page.locator('.star.filled').count()==5
+        assert page.get_by_role('img',name='5 out of 5 stars').is_visible()
         assert page.get_by_text('What a reveal! (UI test fixture)',exact=True).is_visible()
         page.screenshot(path=str(output/'feedback-preview.png'))
         fixture['feedback']={'rating':2,'would_like':False,'would_comment':False,'comment':''}
         page.get_by_text('2/5 · Not keen',exact=True).wait_for()
         assert page.get_by_text('♡ Would not like',exact=True).is_visible()
-        assert page.locator('.suggested-comment').count()==0
+        assert page.locator('.star.filled').count()==2
+        assert page.locator('.star:not(.filled)').count()==3
+        assert page.get_by_text('No comment',exact=True).is_visible()
+        assert page.locator('.suggested-comment blockquote').count()==0
+        fixture['feedback']={'rating':4,'would_like':True,'would_comment':True,'comment':'A clear draft.'}
+        fixture['like_action']={'status':'needs_sign_in','message':'Sign in to YouTube to enable likes.'}
+        page.get_by_text('♡ Sign in to like',exact=True).wait_for()
+        assert page.get_by_text('Sign in to YouTube to enable likes.',exact=True).is_visible()
+        page.set_viewport_size({'width':390,'height':844})
+        page.screenshot(path=str(output/'feedback-mobile.png'),full_page=True)
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.set_viewport_size({'width':1280,'height':900})
         page.unroute('**/api/library')
         blocker={'running':True,'status':'YouTube needs your consent','blocker':{'title':'YouTube needs your consent','message':'Review YouTube policies in the browser window.'}}
         page.route('**/api/state',lambda route:route.fulfill(json=blocker))

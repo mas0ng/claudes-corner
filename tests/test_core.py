@@ -132,6 +132,32 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(first['status'], 'video')
         self.assertTrue(Path(first['images'][0]['path']).is_absolute())
 
+    def test_like_choice_is_applied_and_saved_by_worker(self):
+        runner = Runner()
+        with tempfile.TemporaryDirectory() as temp, patch('corner.runner.OUTPUTS', Path(temp)), \
+                patch('corner.runner.like_short', return_value={'status': 'liked', 'message': 'Liked on YouTube.'}) as like:
+            runner.state.update(run_id='test', config={'agent_mode': True, 'auto_like': True})
+            folder = Path(temp) / 'test/video'
+            folder.mkdir(parents=True)
+            result = {'title': 'Test', 'url': 'https://www.youtube.com/shorts/aaaaaaaaaaa'}
+            runner.record(result, folder)
+            runner.acknowledge('test/video', 'Enjoyed that.', {'rating': 4, 'would_like': True, 'would_comment': False, 'comment': ''})
+            self.assertEqual(result['like_action']['status'], 'queued')
+            page = object()
+            runner.apply_feedback(page, result)
+            like.assert_called_once_with(page, result['url'], runner.stop_event.is_set)
+            self.assertEqual(json.loads((folder / 'result.json').read_text())['like_action']['status'], 'liked')
+            runner.state['config']['auto_like'] = False
+            like.reset_mock()
+            runner.apply_feedback(page, result)
+            self.assertEqual(result['like_action']['status'], 'disabled')
+            like.assert_not_called()
+            runner.state['config']['auto_like'] = True
+            result['feedback']['would_like'] = False
+            runner.apply_feedback(page, result)
+            self.assertEqual(result['like_action']['status'], 'not_requested')
+            like.assert_not_called()
+
     def test_invalid_feedback_does_not_release_or_change_video(self):
         from corner.feedback import validate_feedback
         for value in ({}, {'rating': True, 'would_like': True, 'would_comment': False, 'comment': ''},

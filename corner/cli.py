@@ -10,6 +10,7 @@ def main():
     start = commands.add_parser('start')
     start.add_argument('--browser', choices=['chrome', 'msedge', 'chromium'], default='chromium')
     start.add_argument('--model', choices=['tiny', 'base', 'small'], default='base')
+    start.add_argument('--no-likes', action='store_true', help='Keep like choices as previews without clicking YouTube.')
     next_command = commands.add_parser('next')
     next_command.add_argument('--wait', type=float, default=25)
     reaction = commands.add_parser('react')
@@ -24,7 +25,7 @@ def main():
     try:
         client = Client(autostart=args.command == 'start')
         if args.command == 'start':
-            result = client.start(args.browser, args.model)
+            result = client.start(args.browser, args.model, not args.no_likes)
         elif args.command == 'next':
             result = client.next(args.wait)
         elif args.command == 'react':

@@ -70,7 +70,9 @@ def create_app(runner=None):
                 raise ValueError('Invalid browser or model.')
             if not isinstance(data.get('agent_mode', False), bool):
                 raise ValueError('Invalid agent mode.')
-            runner.start({'browser': browser, 'model': model, 'agent_mode': data.get('agent_mode', False)})
+            if not isinstance(data.get('auto_like', True), bool):
+                raise ValueError('Invalid automatic likes setting.')
+            runner.start({'browser': browser, 'model': model, 'agent_mode': data.get('agent_mode', False), 'auto_like': data.get('auto_like', True)})
         except (ValueError, TypeError, OverflowError) as exc:
             return jsonify(error=str(exc)), 400
         return jsonify(ok=True)
