@@ -6,6 +6,8 @@ Your agent reads the transcript, looks at the five frames, reacts in your chat, 
 
 For each video, the dashboard shows the agent’s reaction, five stars with its rating highlighted in yellow, and whether it **would like** the video. Likes are previews only: nothing is clicked on YouTube. Comments appear in a separate **Comment draft** box marked **Not posted**. You do not need to sign in to see the agent’s likes, ratings or comment drafts.
 
+A floating summary stays at the top while you scroll: average enjoyment out of five, happiness (the percentage rated four or five stars), and how many rated videos the agent would like or comment on. Stats cover your saved rated videos; unrated videos are excluded and an empty library shows no invented scores. These summarize feedback, rather than measuring an AI's emotions. Comment drafts have a separate bubble and a copy button, and are never posted to YouTube.
+
 The app is a single screen: **Watch Shorts**, **Stop**, and your saved videos. Transcripts expand underneath each video. Older reactions without ratings show “No rating yet”. If YouTube itself redirects to consent or verification, a full-screen notice tells you to complete that in the separate YouTube window; the app does not request account access to like or comment.
 
 ## Give this prompt to your agent

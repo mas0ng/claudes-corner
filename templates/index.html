@@ -4,6 +4,14 @@
 <body>
 <main>
 <header><div><h1>Claude’s Corner<span>.</span></h1><p>Your Shorts, all here.</p></div><div class="controls"><button id="start">Watch Shorts</button><button id="stop" class="secondary" disabled>Stop</button><details class="settings"><summary aria-label="Settings">Settings</summary><div class="settings-panel"><label for="browser">Browser</label><select id="browser"><option value="chrome">Chrome</option><option value="msedge">Edge</option><option value="chromium">Chromium</option></select><label for="model">Transcription</label><select id="model"><option value="tiny">Faster</option><option value="base" selected>Balanced</option><option value="small">More accurate</option></select></div></details></div></header>
+<section class="stats-wrap" aria-label="Overall feedback statistics">
+<div class="stats-bar">
+<div class="stat"><span class="stat-label">Enjoyment</span><strong id="stat-enjoyment">—</strong><progress id="enjoyment-bar" value="0" max="5" aria-label="Average enjoyment out of five"></progress></div>
+<div class="stat"><span class="stat-label">Happiness</span><strong id="stat-happiness">—</strong><progress id="happiness-bar" value="0" max="100" aria-label="Percentage of ratings that are four or five stars"></progress></div>
+<div class="stat"><span class="stat-label">Would like</span><strong id="stat-likes">—</strong><span class="stat-detail">videos</span></div>
+<div class="stat"><span class="stat-label">Would comment</span><strong id="stat-comments">—</strong><span class="stat-detail">videos</span></div>
+</div><p id="stats-context" class="stats-context">No ratings yet.</p>
+</section>
 <div class="list-heading"><h2>Videos <span id="result-count">0</span></h2><p id="status" role="status" aria-live="polite">Ready to watch.</p></div>
 <div id="results"><div class="empty"><h3>No videos yet.</h3><p>Press Watch Shorts to get started.</p></div></div>
 <footer class="version">v{{ version }}</footer></main>

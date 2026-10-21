@@ -6,6 +6,18 @@ const clock = t => `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0
 const asset = (r, name) => '/outputs/'+r.folder.split('/').map(encodeURIComponent).join('/')+'/'+encodeURIComponent(name);
 let previous = '', blocked = false;
 async function post(path, data={}) {const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Corner-Token':token},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.error || 'Request failed');return result;}
+function renderStats(videos){
+  const rated=videos.filter(r=>Number.isInteger(r.feedback?.rating) && r.feedback.rating>=1 && r.feedback.rating<=5);
+  const n=rated.length;
+  const average=n?rated.reduce((sum,r)=>sum+r.feedback.rating,0)/n:0;
+  const positive=rated.filter(r=>r.feedback.rating>=4).length;
+  $('stat-enjoyment').textContent=n?`${average.toFixed(1)}/5`:'—';
+  $('stat-happiness').textContent=n?`${Math.round(positive/n*100)}%`:'—';
+  $('stat-likes').textContent=n?`${rated.filter(r=>r.feedback.would_like===true).length}/${n}`:'—';
+  $('stat-comments').textContent=n?`${rated.filter(r=>r.feedback.would_comment===true).length}/${n}`:'—';
+  $('enjoyment-bar').value=average;$('happiness-bar').value=n?positive/n*100:0;
+  $('stats-context').textContent=n?`${n} rated video${n===1?'':'s'} · Happiness is the share rated 4–5 stars.`:'No ratings yet. Stats will appear after an AI reaction.';
+}
 function card(r){
   const node=el('article',undefined,'card');node.dataset.key=r.folder;
   const top=el('div',undefined,'card-top'),heading=el('div');heading.append(el('h3',r.title));const meta=el('div',`${r.author || 'YouTube'} · ${clock(r.duration)}`,'meta');if(r.demo)meta.append(el('span','Demo','demo-note'));heading.append(meta);top.append(heading);
@@ -15,9 +27,22 @@ function card(r){
   const reaction=el('div',undefined,'reaction');
   if(r.feedback){const f=r.feedback;const row=el('div',undefined,'feedback');const mood=['','Disliked it','Not keen','Mixed','Liked it','Loved it'][f.rating];const rating=el('div',undefined,'rating-block');const stars=el('div',undefined,'stars');stars.setAttribute('role','img');stars.setAttribute('aria-label',`${f.rating} out of 5 stars`);for(let i=1;i<=5;i++){const star=el('span','★',i<=f.rating?'star filled':'star');star.setAttribute('aria-hidden','true');stars.append(star);}const icons=el('div',undefined,'rating-icons');const divider=el('div',undefined,'like-divider');divider.setAttribute('aria-hidden','true');const heart=el('span',undefined,'like-heart'+(f.would_like?' active':''));heart.setAttribute('role','img');heart.setAttribute('aria-label',f.would_like?'AI would like this video':'AI would not like this video');heart.title=f.would_like?'AI would like this video':'AI would not like this video';const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M12 21s-9-5.5-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-9 12-9 12Z');svg.append(path);heart.append(svg);icons.append(stars,divider,heart);rating.append(icons,el('span',`${f.rating}/5 · ${mood}`,'rating-caption'));row.append(rating);reaction.append(row);}
   if(r.reaction){reaction.append(el('small','AI reaction'),el('p',r.reaction));if(!r.feedback)reaction.append(el('small','No rating yet','unrated'));}else reaction.append(el('small','No AI reaction yet','unrated'));
-  if(r.feedback){const comment=el('div',undefined,'suggested-comment');const heading=el('div',undefined,'comment-heading');heading.append(el('strong',r.feedback.would_comment?'Comment draft':'No comment'),el('span',r.feedback.would_comment?'Not posted':'AI would not comment','draft-label'));comment.append(heading);if(r.feedback.would_comment)comment.append(el('blockquote',r.feedback.comment));reaction.append(comment);}node.append(reaction);return node;
+  if(r.feedback){
+    const comment=el('div',undefined,r.feedback.would_comment?'suggested-comment':'suggested-comment no-comment');
+    const heading=el('div',undefined,'comment-heading');
+    const identity=el('div',undefined,'comment-identity');identity.append(el('span','AI','comment-avatar'),el('strong',r.feedback.would_comment?'Comment draft':'No comment'));
+    heading.append(identity,el('span',r.feedback.would_comment?'Not posted':'AI would not comment','draft-label'));comment.append(heading);
+    if(r.feedback.would_comment){
+      comment.append(el('blockquote',r.feedback.comment));
+      const actions=el('div',undefined,'comment-actions');actions.append(el('span','Only shown here.','comment-hint'));
+      const copy=el('button','Copy comment','copy-comment');copy.type='button';
+      copy.onclick=async()=>{try{await navigator.clipboard.writeText(r.feedback.comment);copy.textContent='Copied';}catch{copy.textContent='Copy unavailable';}};
+      actions.append(copy);comment.append(actions);
+    }
+    reaction.append(comment);
+  }node.append(reaction);return node;
 }
-function renderLibrary(videos){const key=JSON.stringify(videos);if(key===previous)return;previous=key;const opened=new Set([...document.querySelectorAll('.card details[open]')].map(n=>n.closest('.card').dataset.key));$('result-count').textContent=videos.length;if(!videos.length){$('results').innerHTML=empty;return;}$('results').replaceChildren(...videos.map(r=>{const node=card(r);if(opened.has(r.folder))node.querySelector('details').open=true;return node;}));}
+function renderLibrary(videos){const key=JSON.stringify(videos);if(key===previous)return;previous=key;renderStats(videos);const opened=new Set([...document.querySelectorAll('.card details[open]')].map(n=>n.closest('.card').dataset.key));$('result-count').textContent=videos.length;if(!videos.length){$('results').innerHTML=empty;return;}$('results').replaceChildren(...videos.map(r=>{const node=card(r);if(opened.has(r.folder))node.querySelector('details').open=true;return node;}));}
 function renderState(state){
   $('status').textContent=state.status;$('start').disabled=state.running;$('stop').disabled=!state.running;
   for(const id of ['browser','model'])$(id).disabled=state.running;
