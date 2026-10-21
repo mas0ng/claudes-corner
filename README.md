@@ -105,7 +105,7 @@ Ratings run from 1 (disliked) to 5 (loved). Like and comment choices are indepen
 
 The agent’s `would_like` choice only updates the dashboard. The app never clicks YouTube’s like button or posts a comment. There is no automatic-likes setting and no account sign-in is needed for feedback. Public videos may still be subject to YouTube’s own consent, availability or verification requirements.
 
-Yellow stars show the rating out of five; grey stars show the remainder. **Would like / Would not like** shows the agent’s preference. **Comment draft / Not posted** separates the proposed comment from its chat reaction. These remain local even if you happen to be signed into YouTube. Updating does not undo likes previously applied by an older version.
+Yellow stars show the rating out of five; grey stars show the remainder. A divider and heart sit beside the stars: reddish-purple means the AI would like it; grey means it would not. The heart is a local preference indicator, not a YouTube button. **Comment draft / Not posted** separates the proposed comment from its chat reaction. These remain local even if you happen to be signed into YouTube. Updating does not undo likes previously applied by an older version.
 
 If a manual session is already running, stop it before using agent mode. The CLI and optional MCP bridge share the same server and browser, instead of starting competing capture loops.
 
