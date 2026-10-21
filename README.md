@@ -130,4 +130,5 @@ python -m unittest discover -s tests -v
 
 Use the virtual environment’s Python for tests. Tests exercise URL validation, frame extraction, continuous capture, redirect/consent handling, reaction handoff, API validation, CLI transport and MCP image responses. Live YouTube downloads are excluded from CI. `tests/check_dashboard.py` runs a local browser smoke check against the app.
 
-GitHub Actions runs tests on pushes and pull requests. Pushing a `v*` tag creates a source ZIP release. `requirements.txt` is the portable dependency entry point; `requirements-lock.txt` records the tested Windows environment for reference. MIT licensed.
+GitHub Actions runs tests on pushes and pull requests. Pushing a `v*` tag creates a source ZIP release. `requirements.txt` is the portable dependency entry point; `requirements-lock.txt` records the tested Windows environment for reference. Licensed under the WTFPL v2 (Do What The Fuck You Want To Public License); see LICENSE. Third-party dependencies retain their own licenses.
+
